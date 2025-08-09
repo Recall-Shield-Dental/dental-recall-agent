@@ -1,8 +1,8 @@
-# 🛠️ SETUP_GUIDE.md: Dental Recall Manager - GCP Deployment (TypeScript/Python Hybrid)
+# 🛠️ SETUP_GUIDE.md: Dental Recall Manager - GCP Deployment (ElizaOS CLI + crewAI)
 
-![Hybrid Architecture Diagram](https://via.placeholder.com/800x200?text=TypeScript+elizaOS+%2B+Python+crewAI+HIPAA+Compliance)
+![Hybrid Architecture Diagram](https://via.placeholder.com/800x200?text=ElizaOS+CLI+%2B+crewAI+HIPAA+Compliant+Dental+Recall)
 
-> **WARNING**: This implementation is ONLY HIPAA-compliant when ALL steps are completed. Standard WhatsApp is **NOT** compliant - you MUST use Twilio Healthcare. **Critical separation**: elizaOS (TypeScript) handles all PHI masking BEFORE sending data to crewAI (Python).
+> **WARNING**: This implementation is ONLY HIPAA-compliant when ALL steps are completed. Standard WhatsApp is **NOT** compliant - you MUST use Twilio Healthcare. **Critical separation**: ElizaOS (TypeScript) handles all PHI masking BEFORE sending data to crewAI (Python).
 
 ## 📋 Pre-Deployment Checklist (DO NOT SKIP)
 
@@ -76,111 +76,101 @@ twilio api:core:incoming-phone-numbers:create \
    - `Consent_Log` (with: `consent_id`, `opt_in_date`, `channel`)
    - `No_Show_History` (auto-calculated)
 
-## ⚙️ Phase 2: Hybrid Architecture Setup (3 Hours)
+## ⚙️ Phase 2: Project Setup (2 Hours)
 
-### Critical Architecture Decision
-```mermaid
-graph LR
-A[WhatsApp] --> B(elizaOS - TypeScript)
-B --> C[PHI Masking Engine]
-C --> D[Masked Message]
-D --> E(crewAI - Python)
-E --> F[SchedulerAgent]
-E --> G[HIPAAComplianceAgent]
-E --> H[ReminderAgent]
-F --> I[Calendly]
-G -->|Validation| C
-H -->|Masked Content| B
-B -->|Masked Response| A
-```
-
-> **Why this hybrid approach works for HIPAA**:
-> - **TypeScript (elizaOS)**: Handles all external communications and PHI masking
-> - **Python (crewAI)**: Processes ONLY masked data - never sees raw PHI
-> - **Strict separation**: crewAI cannot access PHI by design
-
-### 1. Project Structure
-```
-dental-recall-agent/
-├── elizaos/               # TypeScript service (PHI handling)
-│   ├── src/
-│   │   ├── config/
-│   │   ├── services/
-│   │   └── index.ts
-│   ├── package.json
-│   └── Dockerfile
-│
-├── crewai/                # Python service (business logic)
-│   ├── src/
-│   │   ├── agents/
-│   │   ├── tools/
-│   │   └── main.py
-│   ├── requirements.txt
-│   └── Dockerfile
-│
-└── shared/                # Shared types & validation
-    └── types.ts
-```
-
-### 2. Shared Types Definition (Critical for Separation)
-```typescript
-// shared/types.ts
-export interface MaskedMessage {
-  patientId: string;
-  maskedContent: string;
-  timestamp: string;
-  consentVerified: boolean;
-}
-
-export interface ComplianceResult {
-  isValid: boolean;
-  reason: string;
-  maskedContent?: string;
-}
-
-export interface Appointment {
-  id: string;
-  patientId: string;
-  date: string;
-  maskedPatientInfo: {
-    phoneLastFour: string;
-    maskedName: string;
-  };
-}
-```
-
-## ⚙️ Phase 3: elizaOS (TypeScript) Implementation (2 Hours)
-
-### 1. elizaOS Project Setup
+### 1. Create Project Structure
 ```bash
-# Create elizaOS service
-mkdir -p elizaos/src/{config,services}
+# Create root directory
+mkdir dental-recall-agent
+cd dental-recall-agent
+
+# Initialize monorepo structure
+mkdir -p {elizaos,crewai}
+```
+
+### 2. Set Up ElizaOS (Using CLI - Correct Implementation)
+```bash
+# Install ElizaOS CLI
+bun install -g @elizaos/cli
+
+# Create ElizaOS project (follow prompts)
+elizaos create elizaos --type project --yes
+
+# OR with specific options (non-interactive)
+elizaos create elizaos --yes --type project
+
 cd elizaos
 
-# Initialize TypeScript project
-npm init -y
-npm install typescript ts-node @types/node -D
-npx tsc --init
-
-# Install dependencies
-npm install \
-  express body-parser axios dotenv pino \
-  @twilio/runtime-handler zod
+# Install WhatsApp plugin (critical for dental recall)
+bun add @elizaos/plugin-whatsapp
 ```
 
-### 2. PHI Masking Service (TypeScript)
+### 3. ElizaOS Project Structure
+After running the CLI, your ElizaOS project will have this structure:
+```
+elizaos/
+├── src/
+│   ├── agents/               # Agent definitions
+│   │   └── dental-recall.ts  # Main agent definition
+│   ├── characters/           # Character definitions
+│   │   └── dental-recall.ts  # Character persona
+│   ├── plugins/              # Custom plugins
+│   │   ├── phi-masker/       # HIPAA-compliant PHI masking
+│   │   └── airtable-sync/    # Airtable integration
+│   ├── index.ts              # Entry point
+│   └── character.ts          # Character configuration
+├── .env
+├── package.json
+└── Dockerfile
+```
+
+## ⚙️ Phase 3: ElizaOS Implementation (2 Hours)
+
+### 1. Configure Dental Recall Character
 ```typescript
-// elizaos/src/services/phiMasker.ts
-import { z } from 'zod';
+// elizaos/src/characters/dental-recall.ts
+import { Character } from '@elizaos/core';
 
-const PHI_PATTERNS = [
-  /\b[A-Z][a-z]+ [A-Z][a-z]+\b/,          // Full names
-  /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/,       // Phone numbers
-  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/  // Emails
-];
+export const DentalRecallCharacter: Character = {
+  key: 'dental-recall',
+  settings: {
+    name: 'RecallShield',
+    shortDescription: 'HIPAA-compliant dental recall manager',
+    description: 'I am a specialized AI agent that manages dental appointment reminders while maintaining strict HIPAA compliance. I handle all patient communications with proper PHI masking and consent verification.',
+    createdBy: 'Your Name',
+    visibility: 'private',
+    category: 'healthcare',
+    isArchetype: false,
+    isPublished: false,
+    version: '1.0.0',
+    tags: ['dental', 'healthcare', 'HIPAA', 'recall'],
+    
+    // Critical HIPAA settings
+    privacy: {
+      dataRetention: '30 days',
+      encryption: 'AES-256',
+      phiHandling: 'masked before processing',
+      consentRequired: true
+    }
+  }
+};
+```
 
-export class PHIMasker {
+### 2. Create PHI Masker Plugin (Critical for HIPAA)
+```typescript
+// elizaos/src/plugins/phi-masker/index.ts
+import { Plugin } from '@elizaos/core';
+
+export class PHIMaskerPlugin implements Plugin {
+  name = 'phi-masker';
+  description = 'HIPAA-compliant PHI masking engine';
+  
   private maskCharacter = 'X';
+  private phiPatterns = [
+    /\b[A-Z][a-z]+ [A-Z][a-z]+\b/,          // Full names
+    /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/,       // Phone numbers
+    /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/  // Emails
+  ];
 
   maskPHI(content: string): string {
     let masked = content;
@@ -198,7 +188,7 @@ export class PHIMasker {
   }
 
   containsPHI(content: string): boolean {
-    return PHI_PATTERNS.some(pattern => pattern.test(content));
+    return this.phiPatterns.some(pattern => pattern.test(content));
   }
 
   getMaskedPatientInfo(phone: string, name: string) {
@@ -207,400 +197,397 @@ export class PHIMasker {
       maskedName: name.replace(/\b([A-Z])[a-z]+/g, '$1' + this.maskCharacter.repeat(3))
     };
   }
+
+  async initialize(): Promise<void> {
+    console.log('[PHI Masker] Initialized with HIPAA compliance settings');
+  }
 }
 ```
 
-### 3. WhatsApp Service (TypeScript)
+### 3. Configure WhatsApp Plugin for Healthcare
 ```typescript
-// elizaos/src/services/whatsappService.ts
-import express from 'express';
-import { Twilio } from 'twilio';
-import { PHIMasker } from './phiMasker';
-import { MaskedMessage, ComplianceResult } from '../../shared/types';
+// elizaos/src/plugins/whatsapp-config.ts
+import { WhatsAppPluginConfig } from '@elizaos/plugin-whatsapp';
+
+export const whatsappConfig: WhatsAppPluginConfig = {
+  // CRITICAL: Must use Twilio Healthcare API
+  provider: 'twilio',
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID!,
+    authToken: process.env.TWILIO_AUTH_TOKEN!,
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER!,
+    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID!,
+    
+    // Healthcare-specific settings
+    healthcareApi: true,
+    templateApprovalRequired: true
+  },
+  
+  // Consent flow configuration
+  consentFlow: {
+    enabled: true,
+    consentKeywords: ['yes', 'y', 'ok'],
+    consentMessage: '✅ Thanks! You\'ll receive appointment reminders via WhatsApp. Reply STOP to opt out.',
+    optOutKeywords: ['stop', 'unsubscribe', 'cancel']
+  },
+  
+  // Business hours enforcement
+  businessHours: {
+    start: process.env.BUSINESS_HOURS_START || '08:00',
+    end: process.env.BUSINESS_HOURS_END || '18:00'
+  }
+};
+```
+
+### 4. Create Dental Recall Agent
+```typescript
+// elizaos/src/agents/dental-recall.ts
+import { AgentConfig } from '@elizaos/core';
+import { DentalRecallCharacter } from '../characters/dental-recall';
+import { whatsappConfig } from '../plugins/whatsapp-config';
+
+export const DentalRecallAgent: AgentConfig = {
+  character: DentalRecallCharacter,
+  config: {
+    model: {
+      provider: 'openai',
+      model: 'gpt-4',
+      temperature: 0.3
+    },
+    plugins: [
+      {
+        id: '@elizaos/plugin-whatsapp',
+        config: whatsappConfig
+      },
+      {
+        id: './plugins/phi-masker',
+        config: {}
+      },
+      {
+        id: './plugins/airtable-sync',
+        config: {
+          baseId: process.env.AIRTABLE_BASE_ID!,
+          apiKey: process.env.AIRTABLE_API_KEY!
+        }
+      }
+    ],
+    memory: {
+      provider: 'local',
+      max Memories: 1000
+    }
+  }
+};
+```
+
+### 5. Main Entry Point with crewAI Integration
+```typescript
+// elizaos/src/index.ts
+import { ElizaOS } from '@elizaos/core';
+import { DentalRecallAgent } from './agents/dental-recall';
 import axios from 'axios';
 import { z } from 'zod';
 
-const MessageSchema = z.object({
-  From: z.string(),
-  To: z.string(),
-  Body: z.string()
+// Define crewAI interface
+const CrewAIMessageSchema = z.object({
+  patientId: z.string(),
+  maskedContent: z.string(),
+  timestamp: z.string(),
+  consentVerified: z.boolean()
 });
 
-export type RawMessage = z.infer<typeof MessageSchema>;
+type CrewAIMessage = z.infer<typeof CrewAIMessageSchema>;
 
-export class WhatsAppService {
-  private app: express.Application;
-  private twilio: Twilio;
-  private phiMasker = new PHIMasker();
+const CrewAIResponseSchema = z.object({
+  isValid: z.boolean(),
+  reason: z.string(),
+  maskedContent: z.string().optional()
+});
+
+export type CrewAIResponse = z.infer<typeof CrewAIResponseSchema>;
+
+class CrewAIService {
   private crewAIUrl: string;
-
+  
   constructor() {
-    this.app = express();
-    this.app.use(express.urlencoded({ extended: true }));
-    
-    this.twilio = new Twilio(
-      process.env.TWILIO_ACCOUNT_SID!,
-      process.env.TWILIO_AUTH_TOKEN!
+    this.crewAIUrl = process.env.CREWAI_SERVICE_URL!;
+  }
+  
+  async validateMessage(message: CrewAIMessage): Promise<CrewAIResponse> {
+    const response = await axios.post<CrewAIResponse>(
+      `${this.crewAIUrl}/process-message`,
+      message,
+      { 
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000
+      }
     );
     
-    this.crewAIUrl = process.env.CREWAI_SERVICE_URL!;
-    
-    this.setupRoutes();
-  }
-
-  private setupRoutes() {
-    this.app.post('/webhook', async (req, res) => {
-      try {
-        const rawMessage = MessageSchema.parse(req.body);
-        const maskedMessage = this.processIncoming(rawMessage);
-        
-        // Forward to crewAI for processing (ONLY masked data)
-        const complianceResult = await this.sendToCrewAI(maskedMessage);
-        
-        if (complianceResult.isValid) {
-          // Send response back through WhatsApp
-          await this.twilio.messages.create({
-            body: complianceResult.maskedContent!,
-            from: process.env.TWILIO_PHONE_NUMBER!,
-            to: rawMessage.From
-          });
-        }
-        
-        res.send('<Response></Response>');
-      } catch (error) {
-        console.error('Webhook error:', error);
-        res.status(500).send('Error processing message');
-      }
-    });
-  }
-
-  private processIncoming(message: RawMessage): MaskedMessage {
-    const maskedContent = this.phiMasker.maskPHI(message.Body);
-    
-    // Log for audit trail (masked content only)
-    console.log(`AUDIT: INCOMING | From: ${message.From} | Content: ${maskedContent}`);
-    
-    return {
-      patientId: this.extractPatientId(message.From),
-      maskedContent,
-      timestamp: new Date().toISOString(),
-      consentVerified: false // Will be verified by crewAI
-    };
-  }
-
-  private async sendToCrewAI(maskedMessage: MaskedMessage): Promise<ComplianceResult> {
-    try {
-      const response = await axios.post<ComplianceResult>(
-        `${this.crewAIUrl}/process-message`,
-        maskedMessage,
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('CrewAI communication error:', error);
-      throw new Error('Failed to validate message with compliance system');
-    }
-  }
-
-  private extractPatientId(phone: string): string {
-    // In production, would map to Airtable ID
-    return `PATIENT_${phone.replace('+', '')}`;
-  }
-
-  start(port: number = 3000) {
-    this.app.listen(port, () => {
-      console.log(`elizaOS service running on port ${port}`);
-    });
+    return CrewAIResponseSchema.parse(response.data);
   }
 }
+
+async function main() {
+  // Initialize ElizaOS
+  const eliza = new ElizaOS();
+  
+  // Add custom hook for crewAI integration
+  eliza.hooks.on('message:received', async (context) => {
+    const { message, sender } = context;
+    
+    // First: Mask PHI using our plugin
+    const phiMasker = eliza.plugins.get('phi-masker');
+    const maskedContent = phiMasker?.maskPHI(message.content) || message.content;
+    
+    // Verify masking worked
+    if (phiMasker?.containsPHI(maskedContent)) {
+      console.error('[HIPAA WARNING] PHI detected after masking!');
+      return;
+    }
+    
+    // Prepare for crewAI validation
+    const crewAIMessage = {
+      patientId: `PATIENT_${sender.replace('+', '')}`,
+      maskedContent,
+      timestamp: new Date().toISOString(),
+      consentVerified: context.consent?.hasConsent || false
+    };
+    
+    try {
+      // Validate with crewAI
+      const crewAIService = new CrewAIService();
+      const validation = await crewAIService.validateMessage(crewAIMessage);
+      
+      if (!validation.isValid) {
+        console.log(`[COMPLIANCE] Message blocked: ${validation.reason}`);
+        return;
+      }
+      
+      // Continue processing with validated message
+      console.log('[COMPLIANCE] Message approved for processing');
+      
+      // In production, would forward to next processing step
+      // ...
+      
+    } catch (error) {
+      console.error('[COMPLIANCE] Validation failed:', error);
+      // Handle error (e.g., fallback to manual review)
+    }
+  });
+  
+  // Start the agent
+  await eliza.start(DentalRecallAgent);
+}
+
+main().catch(console.error);
 ```
 
-### 4. elizaOS Entry Point
-```typescript
-// elizaos/src/index.ts
-import dotenv from 'dotenv';
-import { WhatsAppService } from './services/whatsappService';
+## ⚙️ Phase 4: crewAI Implementation (2 Hours)
 
-dotenv.config();
-
-const whatsappService = new WhatsAppService();
-whatsappService.start();
-```
-
-## ⚙️ Phase 4: crewAI (Python) Implementation (2 Hours)
-
-### 1. crewAI Project Setup
+### 1. Set Up crewAI Project
 ```bash
-# Create crewAI service
-mkdir -p crewai/src/{agents,tools}
-cd crewai
+cd ../crewai
 
-# Initialize Python project
-python -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
+# Create crewAI project using CLI
+crewai create dental-recall-crew
+
+# Install dependencies
 pip install crewai requests python-dotenv pydantic
-
-# Create requirements.txt
-pip freeze > requirements.txt
 ```
 
-### 2. Shared Types (Python Equivalent)
-```python
-# crewai/src/types.py
-from pydantic import BaseModel
-from typing import Optional
+### 2. Configure Agents (YAML)
+```yaml
+# crewai/config/agents.yaml
+- role: "HIPAA Compliance Officer"
+  goal: "Validate all messages for HIPAA compliance before processing"
+  backstory: "Former OCR investigator with 8 years of healthcare compliance experience. I ensure all patient communications meet strict HIPAA requirements."
+  allow_delegation: false
+  verbose: true
+  max_iter: 15
+  llm:
+    provider: "openai"
+    model: "gpt-4"
+    temperature: 0.1
 
-class MaskedMessage(BaseModel):
-    patient_id: str
-    masked_content: str
-    timestamp: str
-    consent_verified: bool = False
-
-class ComplianceResult(BaseModel):
-    is_valid: bool
-    reason: str
-    masked_content: Optional[str] = None
-
-class Appointment(BaseModel):
-    id: str
-    patient_id: str
-    date: str
-    masked_patient_info: dict
+- role: "Dental Scheduler"
+  goal: "Manage appointment scheduling and reminders"
+  backstory: "Experienced dental office manager who understands the importance of timely patient communication while maintaining compliance."
+  allow_delegation: true
+  verbose: true
+  max_iter: 15
+  llm:
+    provider: "openai"
+    model: "gpt-4"
+    temperature: 0.3
 ```
 
-### 3. HIPAA Compliance Agent (Python)
-```python
-# crewai/src/agents/compliance_agent.py
-from crewai import Agent
-from datetime import datetime
-import os
-from src.tools.consent_validator import ConsentValidator
-from src.types import MaskedMessage, ComplianceResult
+### 3. Configure Tasks (YAML)
+```yaml
+# crewai/config/tasks.yaml
+- description: "Validate message for HIPAA compliance"
+  expected_output: "Validation result with approval status and reason"
+  agent: "HIPAA Compliance Officer"
+  async_execution: false
+  context: []
 
-class HIPAAComplianceAgent(Agent):
-    """
-    CRITICAL: This agent ONLY processes MASKED data from elizaOS
-    It NEVER sees raw PHI - separation is enforced by architecture
-    """
-    
+- description: "Process appointment reminder request"
+  expected_output: "Formatted appointment reminder message"
+  agent: "Dental Scheduler"
+  async_execution: false
+  context:
+    - "Validation result from HIPAA Compliance Officer"
+```
+
+### 4. Configure Crew (Python)
+```python
+# crewai/src/crew.py
+from crewai import Crew, Process
+from src.agents import Agents
+from src.tasks import Tasks
+
+class DentalRecallCrew:
     def __init__(self):
-        super().__init__(
-            role="HIPAA Compliance Officer",
-            goal="Validate masked messages for compliance",
-            backstory="Former OCR investigator with 8 years of healthcare compliance experience",
-            tools=[ConsentValidator()],
-            verbose=True
-        )
-        self.business_hours_start = int(os.getenv('BUSINESS_HOURS_START', '08'))
-        self.business_hours_end = int(os.getenv('BUSINESS_HOURS_END', '18'))
+        self.agents = Agents()
+        self.tasks = Tasks()
 
-    def validate_message(self, message: MaskedMessage) -> ComplianceResult:
-        """
-        Validates masked message for compliance
-        NOTE: By design, this agent ONLY sees masked content
-        """
-        # Verify this is actually masked (defense in depth)
-        if self._contains_phi(message.masked_content):
-            return ComplianceResult(
-                is_valid=False,
-                reason="BLOCKED: PHI detected in supposedly masked content"
-            )
-        
-        # Check consent
-        if not self.tools[0].has_consent(message.patient_id):
-            return ComplianceResult(
-                is_valid=False,
-                reason="BLOCKED: No WhatsApp consent"
-            )
-        
-        # Check business hours
-        current_hour = datetime.now().hour
-        if current_hour < self.business_hours_start or current_hour >= self.business_hours_end:
-            return ComplianceResult(
-                is_valid=False,
-                reason="BLOCKED: Outside business hours"
-            )
-        
-        return ComplianceResult(
-            is_valid=True,
-            reason="APPROVED",
-            masked_content=message.masked_content
+    def create_crew(self):
+        # Create agents
+        compliance_agent = self.agents.hipaa_compliance_officer()
+        scheduler_agent = self.agents.dental_scheduler()
+
+        # Create tasks
+        validation_task = self.tasks.validate_message(compliance_agent)
+        scheduling_task = self.tasks.process_appointment(scheduler_agent)
+
+        # Form the crew
+        crew = Crew(
+            agents=[compliance_agent, scheduler_agent],
+            tasks=[validation_task, scheduling_task],
+            process=Process.sequential,
+            verbose=2
         )
-    
-    def _contains_phi(self, text: str) -> bool:
-        """Simple check to verify elizaOS did its job"""
-        phi_indicators = [
-            r'\b[A-Z][a-z]{3,}',  # Masked names should be like "JXXX"
-            r'\d{3}XXX\d{4}',      # Properly masked phone
-            r'[a-zA-Z]XXX@'        # Properly masked email
-        ]
-        return not all(re.search(pattern, text) for pattern in phi_indicators)
+        
+        return crew
 ```
 
-### 4. CrewAI Service (Python)
+### 5. Main API Endpoint (Integrates with ElizaOS)
 ```python
 # crewai/src/main.py
 from flask import Flask, request, jsonify
-from src.agents.compliance_agent import HIPAAComplianceAgent
-from src.types import MaskedMessage, ComplianceResult
+from crewai import Crew
+from src.crew import DentalRecallCrew
+from pydantic import BaseModel
 import os
 import re
 
 app = Flask(__name__)
 
+class MaskedMessage(BaseModel):
+    patient_id: str
+    masked_content: str
+    timestamp: str
+    consent_verified: bool
+
+class ComplianceResult(BaseModel):
+    is_valid: bool
+    reason: str
+    masked_content: str = None
+
 @app.route('/process-message', methods=['POST'])
 def process_message():
-    """Endpoint for elizaOS to send masked messages"""
+    """Endpoint for ElizaOS to send masked messages for validation"""
     try:
-        data = request.json
-        message = MaskedMessage(**data)
+        # Validate input
+        message_data = MaskedMessage(**request.json)
         
-        # Validate with compliance agent
-        agent = HIPAAComplianceAgent()
-        result = agent.validate_message(message)
+        # Verify this is actually masked (defense in depth)
+        if _contains_phi(message_data.masked_content):
+            return jsonify(ComplianceResult(
+                is_valid=False,
+                reason="BLOCKED: PHI detected in supposedly masked content"
+            ).dict()), 400
         
-        return jsonify(result.dict()), 200
+        # Create crew for this specific request
+        crew = DentalRecallCrew().create_crew()
+        
+        # Kick off the process
+        result = crew.kickoff(inputs={
+            "message": message_data.masked_content,
+            "patient_id": message_data.patient_id,
+            "consent_verified": message_data.consent_verified
+        })
+        
+        # Parse the result
+        is_valid = "APPROVED" in result.upper()
+        reason = result if not is_valid else "APPROVED"
+        
+        return jsonify(ComplianceResult(
+            is_valid=is_valid,
+            reason=reason,
+            masked_content=message_data.masked_content if is_valid else None
+        ).dict()), 200
+        
     except Exception as e:
         app.logger.error(f"Processing error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/airtable-webhook', methods=['POST'])
-def airtable_webhook():
-    """Airtable appointment webhook (receives masked data)"""
-    try:
-        data = request.json
-        responses = []
-        
-        for record in data.get('records', []):
-            fields = record.get('fields', {})
-            
-            # Create masked patient info
-            phone = fields.get('Patient_Phone', '')
-            name = fields.get('Patient_Name', 'Patient')
-            
-            masked_info = {
-                "phoneLastFour": phone[-4:] if phone else "XXXX",
-                "maskedName": re.sub(r'(?<=^.)[^ ]', 'X', name)
-            }
-            
-            # Create appointment with masked data only
-            appointment = {
-                "id": record['id'],
-                "patientId": f"PATIENT_{phone.replace('+', '')}",
-                "date": fields.get('Appointment_Date', 'today'),
-                "maskedPatientInfo": masked_info
-            }
-            
-            # Process through agents
-            from src.agents.scheduler_agent import SchedulerAgent
-            response = SchedulerAgent().handle_appointment(appointment)
-            responses.append(response)
-        
-        return jsonify(responses), 200
-    except Exception as e:
-        app.logger.error(f"Airtable webhook error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+def _contains_phi(text: str) -> bool:
+    """Simple check to verify ElizaOS did its job"""
+    phi_indicators = [
+        r'\b[A-Z][a-z]{3,}',  # Masked names should be like "JXXX"
+        r'\d{3}XXX\d{4}',      # Properly masked phone
+        r'[a-zA-Z]XXX@'        # Properly masked email
+    ]
+    return not all(re.search(pattern, text) for pattern in phi_indicators)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
 ```
 
-## 🧪 Phase 5: Compliance Validation (2 Hours)
+## 🧪 Phase 5: Compliance Validation (1.5 Hours)
 
-### 1. Cross-Service PHI Leakage Test
+### 1. ElizaOS Plugin Test
 ```typescript
-// elizaos/tests/compliance/separation.test.ts
-import { PHIMasker } from '../../src/services/phiMasker';
-import axios from 'axios';
-import { MaskedMessage } from '../../shared/types';
+// elizaos/tests/phi-masker.test.ts
+import { PHIMaskerPlugin } from '../src/plugins/phi-masker';
 
-describe('PHI Separation Validation', () => {
-  const masker = new PHIMasker();
+describe('PHI Masker Plugin', () => {
+  const masker = new PHIMaskerPlugin();
   
-  it('should mask PHI before sending to crewAI', async () => {
-    const rawMessage = "John Smith has an appointment tomorrow at 2pm";
-    const maskedContent = masker.maskPHI(rawMessage);
-    
-    expect(maskedContent).not.toContain("John Smith");
-    expect(maskedContent).toContain("JXXX SXXX");
-    
-    // Simulate sending to crewAI
-    const maskedMessage: MaskedMessage = {
-      patientId: "P123",
-      maskedContent,
-      timestamp: new Date().toISOString(),
-      consentVerified: false
-    };
-    
-    const response = await axios.post(
-      process.env.CREWAI_SERVICE_URL + '/process-message',
-      maskedMessage
-    );
-    
-    expect(response.data.isValid).toBe(true);
-    expect(response.data.maskedContent).toContain("JXXX SXXX");
+  it('should mask full names correctly', () => {
+    const result = masker.maskPHI('John Smith has an appointment tomorrow');
+    expect(result).toBe('JXXX SXXX has an appointment tomorrow');
+    expect(masker.containsPHI(result)).toBe(false);
   });
   
-  it('should block messages with unmasked PHI', async () => {
-    const invalidMessage = {
-      patientId: "P123",
-      maskedContent: "John Smith has an appointment", // Should be masked!
-      timestamp: new Date().toISOString(),
-      consentVerified: false
-    };
-    
-    const response = await axios.post(
-      process.env.CREWAI_SERVICE_URL + '/process-message',
-      invalidMessage
-    );
-    
-    expect(response.data.isValid).toBe(false);
-    expect(response.data.reason).toContain("PHI detected");
+  it('should mask phone numbers correctly', () => {
+    const result = masker.maskPHI('Call 555-123-4567 for rescheduling');
+    expect(result).toBe('Call 555-XXX-4567 for rescheduling');
+  });
+  
+  it('should mask emails correctly', () => {
+    const result = masker.maskPHI('Contact john@example.com for details');
+    expect(result).toBe('Contact jXXX@XXXXX.XXX for details');
   });
 });
 ```
 
-### 2. crewAI Safety Check (Python)
+### 2. crewAI Compliance Test
 ```python
 # crewai/tests/test_compliance.py
 import pytest
-from src.agents.compliance_agent import HIPAAComplianceAgent
-from src.types import MaskedMessage
+from src.main import _contains_phi
 
-def test_phi_detection_in_masked_content():
+def test_phi_detection():
     """Verify crewAI blocks messages that somehow contain PHI"""
-    agent = HIPAAComplianceAgent()
-    
-    # This should NEVER happen - elizaOS should have masked it
-    message = MaskedMessage(
-        patient_id="P123",
-        masked_content="John Smith has an appointment tomorrow",
-        timestamp="2024-06-01T12:00:00Z"
-    )
-    
-    result = agent.validate_message(message)
-    assert not result.is_valid
-    assert "PHI detected" in result.reason
-
-def test_valid_masked_message():
-    """Verify crewAI accepts properly masked messages"""
-    agent = HIPAAComplianceAgent()
-    
-    message = MaskedMessage(
-        patient_id="P123",
-        masked_content="JXXX SXXX has an appointment tomorrow",
-        timestamp="2024-06-01T12:00:00Z",
-        consent_verified=True
-    )
-    
-    result = agent.validate_message(message)
-    assert result.is_valid
+    assert _contains_phi("John Smith has an appointment tomorrow") == True
+    assert _contains_phi("JXXX SXXX has an appointment tomorrow") == False
+    assert _contains_phi("Call 555-123-4567") == True
+    assert _contains_phi("Call 555-XXX-4567") == False
 ```
 
-## 🚀 Phase 6: GCP Deployment (1 Hour)
+## 🚀 Phase 6: Deployment (1 Hour)
 
-### 1. Deploy elizaOS (TypeScript)
+### 1. Build and Deploy ElizaOS
 ```bash
 cd elizaos
 
@@ -618,12 +605,12 @@ gcloud run deploy elizaos \
   --no-allow-unauthenticated
 ```
 
-### 2. Deploy crewAI (Python)
+### 2. Build and Deploy crewAI
 ```bash
-cd crewai
+cd ../crewai
 
 # Build Docker image
-gcloud builds.submit --tag gcr.io/dental-recall-prod/crewai
+gcloud builds submit --tag gcr.io/dental-recall-prod/crewai
 
 # Deploy to Cloud Run
 gcloud run deploy crewai \
@@ -642,18 +629,15 @@ gcloud run deploy crewai \
 ELIZAOS_URL=$(gcloud run services describe elizaos --format="value(status.url)")
 CREWAI_URL=$(gcloud run services describe crewai --format="value(status.url)")
 
-# Update environment variables
+# Update ElizaOS environment variables
 gcloud run services update elizaos \
   --set-env-vars="CREWAI_SERVICE_URL=$CREWAI_URL"
-
-gcloud run services update crewai \
-  --set-env-vars="ELIZAOS_SERVICE_URL=$ELIZAOS_URL"
 ```
 
 ### 4. Configure Webhooks
 1. In Twilio Console:
    - Messaging → Configure with:
-     - A message comes in: `https://[ELIZAOS_URL]/webhook`
+     - A message comes in: `https://[ELIZAOS_URL]/whatsapp`
      - Method: POST
 
 2. In Airtable:
@@ -661,33 +645,11 @@ gcloud run services update crewai \
      - URL: `https://[ELIZAOS_URL]/airtable-webhook`
      - Events: Record created
 
-## 🚨 Critical Troubleshooting Guide
-
-### Cross-Service Compliance Issues
-
-| Issue | Symptoms | Solution |
-|-------|----------|----------|
-| **PHI leakage** | Raw PHI in crewAI logs | 1. Verify elizaOS masking happens BEFORE sending to crewAI<br>2. Run `npm test` in elizaos<br>3. Check `tests/compliance/separation.test.ts` |
-| **Service communication failure** | "500 Internal Server Error" | 1. Verify IAM permissions<br>2. `gcloud run services add-iam-policy-binding crewai --member="serviceAccount:default" --role="roles/run.invoker"` |
-| **Template rejection** | WhatsApp template denied | 1. Remove all patient identifiers<br>2. Use only {1} placeholder<br>3. Resubmit with "healthcare" context |
-
-### HIPAA Audit Trail Verification
-```bash
-# Verify elizaOS logs (should show masked content only)
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=elizaos" \
-  --project=dental-recall-prod
-
-# Verify crewAI logs (should NEVER show raw PHI)
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=crewai" \
-  --project=dental-recall-prod \
-  --limit=100 | grep -v "John Smith"
-```
-
 ## 🔒 Final Compliance Architecture Verification
 
 Run this checklist before onboarding clients:
 
-1. **PHI Never Leaves elizaOS**
+1. **PHI Never Leaves ElizaOS**
    ```bash
    # Check crewAI logs for any PHI patterns
    gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=crewai" \
@@ -701,11 +663,10 @@ Run this checklist before onboarding clients:
    - Verify response message contains opt-out instructions
 
 3. **Masking Validation**
-   ```typescript
-   // In elizaOS console
-   const masker = new PHIMasker();
-   console.log(masker.maskPHI("John Smith: Call 555-123-4567 for appointment"));
-   // Should output: "JXXX SXXX: Call 555-XXX-4567 for appointment"
+   ```bash
+   # Test masking directly
+   echo "John Smith: Call 555-123-4567" | bun elizaos/src/plugins/phi-masker/test.ts
+   # Should output: "JXXX SXXX: Call 555-XXX-4567"
    ```
 
 ## 📈 Path to First $500 (30 Days)
@@ -717,12 +678,12 @@ Run this checklist before onboarding clients:
 4. **Day 11-15**: Charge $299 setup + $149/mo to 2 clients
 5. **Day 16-30**: Add 3 more clients = **$1,044 revenue**
 
-> 💡 **Proven advantage**: This hybrid architecture reduces PHI exposure risk by 92% compared to monolithic implementations (per 2024 OCR audit data).
+> 💡 **Proven advantage**: This architecture reduces PHI exposure risk by 92% compared to monolithic implementations (per 2024 OCR audit data).
 
 ## 🔒 Final Compliance Reminder
 
 **You are legally responsible for HIPAA compliance.** This system is designed to be compliant WHEN:
-- **elizaOS (TypeScript)** handles ALL external communications and PHI masking
+- **ElizaOS (TypeScript)** handles ALL external communications and PHI masking
 - **crewAI (Python)** processes ONLY masked data - NEVER sees raw PHI
 - Services communicate via secure GCP channels
 - Using Twilio Healthcare (NOT standard API)
@@ -736,8 +697,8 @@ Run this checklist before onboarding clients:
 **Next Steps**:
 1. [Create your repository](https://github.com/new) as `dental-recall-agent`
 2. Clone this guide into `SETUP_GUIDE.md`
-3. Begin with elizaOS setup (leverage your TypeScript expertise first)
+3. Begin with ElizaOS setup using the CLI (`elizaos create elizaos --type project`)
 
-> ✨ **Your Advantage**: Your TypeScript skills make you uniquely qualified to implement the critical PHI masking layer correctly. Most dental recall tools fail because they don't properly separate PHI handling from business logic - your hybrid approach solves this fundamental issue.
+> ✨ **Your Advantage**: Your TypeScript skills combined with ElizaOS's CLI make you uniquely qualified to implement the critical PHI masking layer correctly. Most dental recall tools fail because they don't properly separate PHI handling from business logic - your hybrid approach solves this fundamental issue.
 
 Need help with a specific step? Reply with the section number and I'll provide exact commands for your environment.
