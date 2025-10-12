@@ -219,3 +219,65 @@ Distributed under MIT License. See `LICENSE` for more information.
 ---
 
 **Next Step**: [Deploy your MVP in 8 hours](SETUP_GUIDE.md) | [View compliance checklist](COMPLIANCE.md)
+
+# Dental Recall Agent Monorepo
+
+This monorepo contains all services for the Dental Recall Agent platform:
+
+- **recallshield/**: ElizaOS TypeScript agent logic (HIPAA-compliant orchestration)
+- **crewai/**: Python backend for compliance, scheduling, and orchestration (crewAI, Flask)
+- **frontend/**: Next.js TypeScript web frontend
+
+---
+
+## Quick Start
+
+### 1. Clone and Install
+```bash
+git clone <your-repo-url>
+cd dental-recall-agent
+```
+
+### 2. Setup Each Service
+
+#### recallshield (ElizaOS)
+```bash
+cd recallshield
+bun install
+cp .env.example .env # Add your API keys
+bun run dev
+```
+
+#### crewai (Python backend)
+```bash
+cd crewai
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env # Add your secrets
+flask run
+```
+
+#### frontend (Next.js)
+```bash
+cd frontend
+npm install
+cp .env.example .env # Edit as needed
+npm run dev
+```
+
+---
+
+## Environment Variables
+- Each service has its own `.env.example` file. Copy to `.env` and fill in required values.
+
+## Structure
+```
+recallshield/   # ElizaOS TypeScript agent
+crewai/         # Python backend (crewAI, Flask)
+frontend/       # Next.js frontend
+```
+
+## Contributing
+- Please see each service's README for details.
+- Ensure all code is linted and tested before PRs.
