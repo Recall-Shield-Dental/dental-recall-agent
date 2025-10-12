@@ -1,0 +1,12 @@
+{
+  "name": "Cloudflare Pages Next.js Dev",
+  "build": {
+    "dockerfile": "../.devcontainer/Dockerfile"
+  },
+  "settings": {},
+  "extensions": [
+    "cloudflare.cloudflare-vscode",
+    "esbenp.prettier-vscode"
+  ],
+  "postCreateCommand": "npm install"
+}
