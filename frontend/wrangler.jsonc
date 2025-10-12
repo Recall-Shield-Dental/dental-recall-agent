@@ -1,0 +1,7 @@
+{
+  // Wrangler configuration for Cloudflare Pages (Next.js)
+  "buildCommand": "npx next build",
+  "buildOutputDirectory": ".vercel/output/static",
+  "functionsDirectory": ".vercel/output/functions",
+  "compatibilityDate": "2025-10-12"
+}
