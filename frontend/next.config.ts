@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  experimental: {
-    runtime: "edge",
-  },
+  experimental: {},
 };
 
 export default nextConfig;
