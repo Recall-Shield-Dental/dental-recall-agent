@@ -1,6 +1,0 @@
-name = "dental-recall-frontend"
-workers_dev = true
-compatibility_date = "2025-10-12"
-
-[site]
-bucket = "./out"

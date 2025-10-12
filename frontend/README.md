@@ -1,23 +1,4 @@
-# Frontend (Next.js)
-
-This is the web frontend for the Dental Recall Agent, built with Next.js and TypeScript.
-
-## Setup
-
-```bash
-cd frontend
-npm install
-cp .env.example .env # Edit as needed
-```
-
-## Running
-
-```bash
-npm run dev
-```
-
-## Environment Variables
-See `.env.example` for configuration.
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 
