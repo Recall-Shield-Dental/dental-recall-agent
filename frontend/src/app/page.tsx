@@ -1,8 +1,16 @@
 export const runtime = "edge";
 
+
+import dynamic from "next/dynamic";
+const PatientsList = dynamic(() => import("./PatientsList"), { ssr: false });
+import AuthButtons from "./AuthButtons";
+
 export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center bg-gradient-to-br from-blue-50 to-cyan-100 py-12 px-4">
+      <div className="w-full flex justify-end max-w-2xl mb-4">
+        <AuthButtons />
+      </div>
       {/* Hero & Features */}
       <div className="flex flex-col items-center max-w-2xl w-full bg-white/90 rounded-3xl shadow-2xl p-10 mb-12">
         <div className="mb-8 flex flex-col items-center">
@@ -99,6 +107,9 @@ export default function Home() {
           Get Started
         </a>
       </section>
+
+      {/* Demo: Patients List */}
+      <PatientsList />
 
       {/* Footer */}
       <footer className="w-full max-w-3xl mt-4 mb-2 text-center text-gray-500 text-base">
