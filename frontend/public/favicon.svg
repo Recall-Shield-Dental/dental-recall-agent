@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="shieldGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <!-- Shield -->
+    <path d="M32 6C32 6 10 12 10 24c0 18 22 30 22 30s22-12 22-30C54 12 32 6 32 6z" fill="url(#shieldGradient)"/>
+    <!-- Tooth -->
+    <path d="M32 20c-4 0-7 3-7 7 0 6 4 11 7 11s7-5 7-11c0-4-3-7-7-7zm0 2c2.8 0 5 2.2 5 5 0 4.7-3.2 9-5 9s-5-4.3-5-9c0-2.8 2.2-5 5-5z" fill="#fff"/>
+  </g>
+</svg>
