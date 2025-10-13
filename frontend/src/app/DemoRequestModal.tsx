@@ -27,8 +27,12 @@ export default function DemoRequestModal({ onSuccess }: DemoRequestFormProps) {
       if (!res.ok) throw new Error("Failed to submit request");
       setSubmitted(true);
       onSuccess();
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "message" in err) {
+        setError((err as { message?: string }).message || "Something went wrong");
+      } else {
+        setError("Something went wrong");
+      }
     } finally {
       setSubmitting(false);
     }
