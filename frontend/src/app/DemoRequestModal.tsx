@@ -75,7 +75,7 @@ export default function DemoRequestModal({ onSuccess }: DemoRequestFormProps) {
         <h2 className="text-2xl font-bold mb-4 text-blue-700">Request a Demo</h2>
         {submitted ? (
           <div className="text-green-600 font-semibold text-center py-8">
-            Thank you! We'll be in touch soon.
+            Thank you! We&apos;ll be in touch soon.
           </div>
         ) : (
           <>
