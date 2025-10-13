@@ -50,7 +50,7 @@ export default function DemoRequestModal({ onSuccess }: DemoRequestFormProps) {
             ×
           </button>
           <iframe
-            src="https://calendly.com/YOUR-CALENDLY-LINK/demo"
+            src="https://calendly.com/yielddelta"
             width="100%"
             height="600"
             frameBorder="0"
