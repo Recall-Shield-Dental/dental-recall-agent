@@ -5,8 +5,11 @@ export const runtime = "edge";
 import dynamic from "next/dynamic";
 const PatientsList = dynamic(() => import("./PatientsList"), { ssr: false });
 import AuthButtons from "./AuthButtons";
+import { useState } from "react";
+import DemoRequestModal from "./DemoRequestModal";
 
 export default function Home() {
+  const [showDemoModal, setShowDemoModal] = useState(false);
   return (
     <main className="min-h-screen flex flex-col items-center bg-gradient-to-br from-blue-50 to-cyan-100 py-12 px-4">
       <div className="w-full flex justify-end max-w-2xl mb-4">
@@ -45,12 +48,16 @@ export default function Home() {
           Reduce no-shows, automate patient follow-ups, and ensure compliance with
           <span className="font-semibold text-blue-600"> RecallShield</span>—the AI-powered dental recall solution trusted by modern practices.
         </p>
-        <a
-          href="#"
+        <button
+          type="button"
           className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-10 rounded-xl shadow-lg transition mb-4 text-lg"
+          onClick={() => setShowDemoModal(true)}
         >
           Request a Demo
-        </a>
+        </button>
+        {showDemoModal && (
+          <DemoRequestModal onSuccess={() => setShowDemoModal(false)} />
+        )}
         <section className="mt-10 w-full">
           <h2 className="text-2xl font-bold text-blue-700 mb-6 text-center">
             Why Choose RecallShield?
