@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { usePatients } from "./usePatients";
+// Import Patient type for explicit typing
+import type { Patient } from "./usePatients";
 
 export default function PatientsList() {
   const { patients, loading, error, addPatient, user, roles, isAuthenticated } = usePatients();
@@ -39,7 +41,7 @@ export default function PatientsList() {
       {loading && <p>Loading...</p>}
       {error && <p className="text-red-500">{error}</p>}
       <ul className="mb-6">
-        {patients.map((p: any) => (
+        {patients.map((p: Patient) => (
           <li key={p.id} className="border-b py-2">
             <span className="font-semibold">{p.fields?.Name}</span> <span className="text-gray-500">{p.fields?.Phone}</span>
           </li>
