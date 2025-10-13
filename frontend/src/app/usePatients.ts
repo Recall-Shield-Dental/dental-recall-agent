@@ -2,15 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+export interface Patient {
+  id: string;
+  fields: {
+    Name: string;
+    Phone: string;
+    [key: string]: unknown;
+  };
+}
 
 export function usePatients() {
-  const [patients, setPatients] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { getAccessTokenSilently, user, isAuthenticated } = useAuth0();
 
   // Extract roles from user claims (if present)
-  const roles = user?.["https://schemas.quickstart.com/roles"] || user?.roles || [];
+  const roles: string[] = user?.["https://schemas.quickstart.com/roles"] || user?.roles || [];
 
   // Fetch patients
   useEffect(() => {
@@ -24,8 +32,8 @@ export function usePatients() {
         });
         const data = await res.json();
         setPatients(data.records || []);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError((err as Error).message);
       } finally {
         setLoading(false);
       }
@@ -35,7 +43,7 @@ export function usePatients() {
   }, [isAuthenticated]);
 
   // Add a patient
-  const addPatient = async (fields: Record<string, any>) => {
+  const addPatient = async (fields: { Name: string; Phone: string }) => {
     setLoading(true);
     setError(null);
     try {
@@ -49,11 +57,11 @@ export function usePatients() {
         body: JSON.stringify(fields),
       });
       const data = await res.json();
-      setPatients((prev) => [...prev, ...(data.records || [])]);
+      setPatients((prev: Patient[]) => [...prev, ...(data.records || [])]);
       setLoading(false);
       return data;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError((err as Error).message);
       setLoading(false);
       throw err;
     }
