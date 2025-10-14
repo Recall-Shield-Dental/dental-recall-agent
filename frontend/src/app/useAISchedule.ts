@@ -25,8 +25,12 @@ export function useAISchedule() {
       if (!res.ok) throw new Error("Failed to get AI suggestion");
       const data = await res.json();
       setSuggestion(data.ai_suggestion);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong");
+      }
     } finally {
       setLoading(false);
     }
