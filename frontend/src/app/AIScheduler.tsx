@@ -36,9 +36,9 @@ export default function AIScheduler() {
       {suggestion && (
         <div className="bg-blue-50 p-4 rounded text-blue-900">
           <div className="font-semibold mb-1">AI Suggestion:</div>
-          <div>{(suggestion as any).message}</div>
+          <div>{suggestion.message}</div>
           <div className="text-sm mt-2 text-blue-700">
-            Suggested: {(suggestion as any).suggested_date} at {(suggestion as any).suggested_time}
+            Suggested: {suggestion.suggested_date} at {suggestion.suggested_time}
           </div>
         </div>
       )}
