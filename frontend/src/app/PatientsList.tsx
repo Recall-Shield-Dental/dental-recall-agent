@@ -26,6 +26,17 @@ export default function PatientsList() {
     }
   };
 
+  // Only show the patients section to admin/staff, otherwise show a friendly message or nothing
+  if (!canAdd) {
+    return (
+      <div className="text-center text-gray-500 my-8">
+        Welcome to RecallShield!<br />
+        Please log in as staff or admin to view and manage patients.<br />
+        If you are a patient, your provider will contact you directly.
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-lg mx-auto my-8 p-6 bg-white rounded-xl shadow">
       <h2 className="text-2xl font-bold mb-4">Patients</h2>
@@ -47,37 +58,29 @@ export default function PatientsList() {
           </li>
         ))}
       </ul>
-      {canAdd ? (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <input
-            className="border rounded px-3 py-2"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <input
-            className="border rounded px-3 py-2"
-            placeholder="Phone"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white rounded px-4 py-2 mt-2 hover:bg-blue-700 disabled:opacity-50"
-            disabled={submitting}
-          >
-            {submitting ? "Adding..." : "Add Patient"}
-          </button>
-        </form>
-      ) : (
-        <div className="text-gray-500 text-sm text-center mt-4">
-          {isAuthenticated
-            ? "You do not have permission to add patients."
-            : "Please log in to add patients."}
-        </div>
-      )}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Phone"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white rounded px-4 py-2 mt-2 hover:bg-blue-700 disabled:opacity-50"
+          disabled={submitting}
+        >
+          {submitting ? "Adding..." : "Add Patient"}
+        </button>
+      </form>
     </div>
   );
 }
