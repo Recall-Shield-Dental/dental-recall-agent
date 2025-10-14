@@ -6,7 +6,10 @@ import dynamic from "next/dynamic";
 const PatientsList = dynamic(() => import("./PatientsList"), { ssr: false });
 import AuthButtons from "./AuthButtons";
 import { useState } from "react";
+
+
 import DemoRequestModal from "./DemoRequestModal";
+import AIScheduler from "./AIScheduler";
 
 export default function Home() {
   const [showDemoModal, setShowDemoModal] = useState(false);
@@ -58,6 +61,9 @@ export default function Home() {
         {showDemoModal && (
           <DemoRequestModal onSuccess={() => setShowDemoModal(false)} />
         )}
+
+        {/* AI Scheduler Section */}
+        <AIScheduler />
         <section className="mt-10 w-full">
           <h2 className="text-2xl font-bold text-blue-700 mb-6 text-center">
             Why Choose RecallShield?
