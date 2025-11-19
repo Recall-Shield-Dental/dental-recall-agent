@@ -1,0 +1,63 @@
+validate_message_task:
+  description: >
+    Validate the patient message for HIPAA compliance before delivery.
+    Check for:
+    1. Unmasked PHI (patient names, phone numbers, email addresses, SSN)
+    2. Patient consent record in Airtable (consent_timestamp must exist)
+    3. Message delivery time within business hours (8am-6pm local time)
+    4. Use of approved WhatsApp message templates only
+    
+    Input: {message_content}, {patient_id}, {delivery_time}
+    
+    If ANY violation is found, BLOCK the message immediately and log the violation.
+  expected_output: >
+    A JSON object with:
+    - compliance_status: "APPROVED" or "BLOCKED"
+    - violations: [] (list of any HIPAA violations found)
+    - masked_message: (sanitized version if approved)
+    - audit_log_entry: (timestamp, patient_id, action taken)
+  agent: hipaa_compliance_officer
+  context: []
+
+schedule_reminder_task:
+  description: >
+    Send appointment reminder via Twilio Healthcare WhatsApp.
+    Use only pre-approved message templates:
+    - Template 48h: "Hi! Reminder: You have an appointment at [PRACTICE_NAME] on [DATE] at [TIME]. Reply CONFIRM or visit [RESCHEDULE_LINK]"
+    - Template 24h: "Hi! Your appointment at [PRACTICE_NAME] is tomorrow at [TIME]. See you soon! [RESCHEDULE_LINK]"
+    
+    Input: {appointment_id}, {reminder_type}, {patient_phone}, {appointment_datetime}
+    
+    ALWAYS pass message through HIPAA Compliance Officer validation first.
+    Only send if compliance_status = "APPROVED"
+  expected_output: >
+    A JSON object with:
+    - message_status: "SENT", "BLOCKED", or "FAILED"
+    - twilio_message_sid: (if sent successfully)
+    - delivery_timestamp: (actual send time)
+    - patient_response: (if patient replies CONFIRM or requests reschedule)
+  agent: dental_scheduler
+  context: [validate_message_task]
+
+coordinate_reminders_task:
+  description: >
+    Monitor Airtable appointments database and trigger reminders at optimal times.
+    Query appointments with:
+    - Status = "SCHEDULED" 
+    - Appointment_DateTime between NOW+24h and NOW+48h
+    - Reminder_48h_Sent = FALSE or Reminder_24h_Sent = FALSE
+    
+    For each appointment found:
+    1. Calculate exact reminder send time (48h before = 10am two days prior, 24h before = 2pm day prior)
+    2. Pass to dental_scheduler for message preparation
+    3. Update Airtable reminder tracking fields after successful delivery
+    
+    Input: {current_datetime}
+  expected_output: >
+    A summary report with:
+    - total_appointments_scanned: (number)
+    - reminders_triggered: (list of appointment_ids and reminder types)
+    - reminders_blocked: (list with compliance reasons)
+    - next_scheduled_check: (timestamp for next database scan)
+  agent: reminder_coordinator
+  context: [validate_message_task, schedule_reminder_task]

@@ -1,0 +1,24 @@
+[project]
+name = "dental_recall_crew"
+version = "0.1.0"
+description = "dental-recall-crew using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[google-genai,tools]==1.5.0",
+]
+
+[project.scripts]
+dental_recall_crew = "dental_recall_crew.main:run"
+run_crew = "dental_recall_crew.main:run"
+train = "dental_recall_crew.main:train"
+replay = "dental_recall_crew.main:replay"
+test = "dental_recall_crew.main:test"
+run_with_trigger = "dental_recall_crew.main:run_with_trigger"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"
