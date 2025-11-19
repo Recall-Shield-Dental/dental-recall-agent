@@ -74,8 +74,8 @@ We'll create a HIPAA-compliant database to store appointment data.
 
 **Example:**
 ```env
-AIRTABLE_API_KEY=patAbCdEfGhIjKlMnOpQrStUvWxYz123456
-AIRTABLE_BASE_ID=appXyZ123AbC456DeF
+AIRTABLE_API_KEY=patXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+AIRTABLE_BASE_ID=appXXXXXXXXXXXXXX
 AIRTABLE_TABLE_NAME=Appointments
 ```
 
