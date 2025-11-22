@@ -33,9 +33,11 @@ def run():
         print("\n" + "="*50)
         print("DENTAL RECALL CREW EXECUTION COMPLETE")
         print("="*50)
-        return result
+        print(result)
+        sys.exit(0)
     except Exception as e:
-        raise Exception(f"An error occurred while running the crew: {e}")
+        print(f"An error occurred while running the crew: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def train():
@@ -50,9 +52,10 @@ def train():
     }
     try:
         DentalRecallCrew().crew().train(n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs)
-
+        sys.exit(0)
     except Exception as e:
-        raise Exception(f"An error occurred while training the crew: {e}")
+        print(f"An error occurred while training the crew: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def replay():
     """
@@ -60,9 +63,10 @@ def replay():
     """
     try:
         DentalRecallCrew().crew().replay(task_id=sys.argv[1])
-
+        sys.exit(0)
     except Exception as e:
-        raise Exception(f"An error occurred while replaying the crew: {e}")
+        print(f"An error occurred while replaying the crew: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def test():
     """
@@ -76,9 +80,10 @@ def test():
     }
     try:
         DentalRecallCrew().crew().test(n_iterations=int(sys.argv[1]), openai_model_name=sys.argv[2], inputs=inputs)
-
+        sys.exit(0)
     except Exception as e:
-        raise Exception(f"An error occurred while testing the crew: {e}")
+        print(f"An error occurred while testing the crew: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def run_with_trigger():
     """
@@ -108,11 +113,8 @@ def run_with_trigger():
 
     try:
         result = DentalRecallCrew().crew().kickoff(inputs=inputs)
-        return result
+        print(result)
+        sys.exit(0)
     except Exception as e:
-        raise Exception(f"An error occurred while running the crew with trigger: {e}")
-    try:
-        result = DentalRecallCrew().crew().kickoff(inputs=inputs)
-        return result
-    except Exception as e:
-        raise Exception(f"An error occurred while running the crew with trigger: {e}")
+        print(f"An error occurred while running the crew with trigger: {e}", file=sys.stderr)
+        sys.exit(1)
